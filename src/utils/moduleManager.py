@@ -5,17 +5,18 @@ from utils.loggerManager import LoggerManager
 class ModuleManager:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.logger = LoggerManager().get_logger('module_manager')
+        self.logger = LoggerManager().get_logger('bot')
 
+    @staticmethod
     async def _manage(self, action, name: str, success_message: str):
-        info = success_message
+        result: bool = False
         try:
             await action(name)
             self.logger.success(success_message)
         except commands.ExtensionError as e:
-            info = str(e)
-            self.logger.error(f'Ошибка управления модулем {name}: {e}')
-        return info
+            self.logger.error(f'failed to control module {name}:\n{e}')
+            result = True
+        return result
 
     async def load(self, name: str):
         return await self._manage(

@@ -39,8 +39,6 @@ async def main():
     module_manager = ModuleManager(bot)
     input_manager = InputManager(module_manager)
 
-    scheduler.start()
-
     task = asyncio.create_task(input_manager.read('tmp/fifo'))
 
     try:

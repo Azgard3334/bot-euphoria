@@ -1,4 +1,5 @@
-from .iCommand import ICommand, ExitModuleCommand, LoadModuleCommand, ReloadModuleCommand, UnloadModuleCommand
+from .iCommand import *
+from utils.loggerManager import LoggerManager
 
 class CommandDispatcher:
     def __init__(self, module_manager):
@@ -8,24 +9,25 @@ class CommandDispatcher:
             'unload': UnloadModuleCommand(module_manager),
             'exit': ExitModuleCommand(module_manager),
         }
+        self.logger = LoggerManager().get_logger('bot')
 
-    def register_command(self, name: str, command: ICommand):
-        result = 0
+    def register(self, name: str, command: ICommand):
+        result: bool = False
         if name in self.commands:
-            result = 1
+            result = True
         else:
             self.commands[name] = command
         return result
 
-    def remove_command(self, name: str):
-        result = 0
+    def remove(self, name: str):
+        result: bool = False
         try:
             del self.commands[name]
         except KeyError:
-            result = 1
+            result = True
         return result
 
     async def execute(self, command):
         if (command[0] not in self.commands):
-            raise KeyError(command, self.commands[0])
+            self.logger.error(f'{command} is not exist')
         return await self.commands[command[0]].execute(command)
