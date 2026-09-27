@@ -1,6 +1,5 @@
 from .logSink import LogSink
-from .consoleSink import ConsoleSink
-from .fileSink import FileSink
+from .logSink import FileSink
 from .logger import Logger
 from .loggerManager import LoggerManager
 

@@ -1,7 +1,6 @@
 import os
 from .logger import Logger
-from .consoleSink import ConsoleSink
-from .fileSink import FileSink
+from .logSink import FileSink
 
 # путь к логам относительно этого файла, а не откуда запустили скрипт
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

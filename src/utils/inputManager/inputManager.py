@@ -8,7 +8,7 @@ from .commandDispatcher import CommandDispatcher
 class InputManager:
     def __init__(self, module_manager):
         self.command_dispatcher = CommandDispatcher(module_manager)
-        self.logger = loggerManager.get_logger('bot')
+        self.logger = LoggerManager().get_logger('bot')
 
     @staticmethod
     def _readline(file):
@@ -18,10 +18,10 @@ class InputManager:
     async def read(self, file: str):
         try:
             if not os.path.exists(file):
-                os.mkfifo(file, 0o666)
+                os.mkfile(file, 0o666)
 
             while Event().running:
-                data = await asyncio.to_thread(self._readline, file).split()
+                data = (await asyncio.to_thread(self._readline, file)).split()
                 info = await self.command_dispatcher.execute(data)
         except OSError as e:
             self.logger.error("failed to read file: file was remove")

@@ -17,6 +17,8 @@ ENV/
 logs/
 *.log
 
+tmp/
+
 .DS_Store
 .AppleDouble
 .LSOverride
