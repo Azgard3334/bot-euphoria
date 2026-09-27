@@ -3,15 +3,15 @@ import asyncio
 import discord
 from discord import ui
 from discord.ext import commands
-from utils.database import Database
 from datetime import datetime, timedelta
 
 class PRMagazine_View(ui.LayoutView):
-    def __init__(self):
+    def __init__(self, bot):
         super().__init__(timeout=None)
+        self.bot = bot
 
     async def create_view(self, interaction: discord.Interaction):
-        user = await Database.get(interaction.user.id, 'partners_stats')
+        user = await self.bot.database.get(interaction.user.id, 'partners_stats')
         container = ui.Container(accent_color=0xe6acfa)
 
         container.add_item(ui.TextDisplay('### :newspaper: Информация'))
@@ -58,7 +58,7 @@ class PRMagazine_Cog(commands.Cog):
             await interaction.response.defer()
 
         if id == 'partner_edit':
-            user = await Database.get(interaction.user.id, 'partners_stats')
+            user = await self.bot.database.get(interaction.user.id, 'partners_stats')
 
             class EditTextModal(ui.Modal, title='Изменение текста'):
                 inputText = ui.TextInput(
@@ -70,9 +70,9 @@ class PRMagazine_Cog(commands.Cog):
                 )
 
                 async def on_submit(self, modal_interaction):
-                    await Database.set(modal_interaction.user.id, {'text':self.inputText.value}, 'partners_stats')
+                    await self.bot.database.set(modal_interaction.user.id, {'text':self.inputText.value}, 'partners_stats')
 
-                    view = PRMagazine_View()
+                    view = PRMagazine_View(self.bot)
                     await view.create_view(modal_interaction)
 
                     await modal_interaction.response.edit_message(view=view)
@@ -82,7 +82,7 @@ class PRMagazine_Cog(commands.Cog):
         if id == 'partner_publish':
             await interaction.response.defer(thinking=True, ephemeral=True)
 
-            user = await Database.get(interaction.user.id, 'partners_stats')
+            user = await self.bot.database.get(interaction.user.id, 'partners_stats')
 
             if interaction.user.id not in self.views.keys():
                 await interaction.followup.send(':x: Сначала выберите цену рекламы.',)
@@ -126,4 +126,4 @@ class PRMagazine_Cog(commands.Cog):
 
             await interaction.followup.send(':white_check_mark: Реклама успешно опубликована.')
 
-            await Database.set(interaction.user.id, {'score': user['score']-price, 'timeout':datetime.now() + timedelta(weeks=2)}, 'partners_stats')
+            await self.bot.database.set(interaction.user.id, {'score': user['score']-price, 'timeout':datetime.now() + timedelta(weeks=2)}, 'partners_stats')

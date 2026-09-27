@@ -39,17 +39,18 @@ async def main():
     module_manager = ModuleManager(bot)
     input_manager = InputManager(module_manager)
 
-    #task = asyncio.create_task(input_manager.read('tmp/fifo'))
+    task = asyncio.create_task(input_manager.read('tmp/fifo'))
 
     try:
         load_dotenv('.env')
         await bot.start(token=os.getenv('TOKEN'))
+        print("bot stoped")
     except KeyboardInterrupt:
         logger.warning('Бот остановлен пользователем')
     except Exception as e:
         logger.exception(f'Произошла ошибка при запуске: {e}')
     finally:
-        #await task
+        await task
         if not bot.is_closed():
             await bot.close()
 

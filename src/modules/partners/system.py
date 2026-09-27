@@ -1,31 +1,34 @@
 import re
 import json
 import discord
+import asyncio
+from config import config
 from discord import app_commands, ui
 from discord.ext import commands
 from .magazine import PRMagazine_View
-from utils.database import Database
 from utils.managerPermission import ManagerPermission
 from datetime import datetime
+from .reset import reset
 
 class Partners(commands.Cog):
-    group = app_commands.Group(name='партнеры', description='Статистика PR-менеджеров')
+    group = app_commands.Group(name='partners', description='Статистика PR-менеджеров')
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-        self.PARTNER_ROLE = self.bot.guilds[0].get_role(1542452446033481829)
-        self.PARTNERS_CHANNEL_ID = 1541935060381474927
-        self.PARTNERS_CHANNEL_BOT_ID = 1542452850335031316
+        self.bot.add_scheduler_task(reset, 0, 0, 0, 'partners_reset', args=(self.bot,))
     
     async def cog_load(self):
-        for command in self.get_app_commands():
+        '''for command in self.get_app_commands():
             if command not in self.bot.tree.get_commands():
                 self.bot.tree.add_command(command, guild=self.bot.guilds[0])
         
-        await self.bot.tree.sync(guild=self.bot.guilds[0])
+        await self.bot.tree.sync(guild=self.bot.guilds[0])'''
 
-        await Database.execute(f'''
+        self.PARTNER_ROLE = config['roles']['partner_role_id']
+        self.PARTNERS_CHANNEL_ID = config['channels']['partners_channel_id']
+        self.PARTNERS_CHANNEL_BOT_ID = config['channels']['partners_bot_channel_id']
+
+        await self.bot.database.execute(f'''
             CREATE TABLE IF NOT EXISTS `partners_stats` (
                 `id` bigint(20) NOT NULL,
                 `week` int(10) NOT NULL DEFAULT 0,
@@ -71,7 +74,7 @@ class Partners(commands.Cog):
             await message.channel.send(':x: Вы не указали ссылку на сервер.')
             return
 
-        user = await Database.get(message.author.id, 'partners_stats')
+        user = await self.bot.database.get(message.author.id, 'partners_stats')
 
         if url in json.loads(user['links']):
             await message.channel.send(':x: Вы уже заключали партнёрство с данным сервером сегодня.')
@@ -112,82 +115,76 @@ class Partners(commands.Cog):
         channel = await self.bot.fetch_channel(self.PARTNERS_CHANNEL_BOT_ID)
         await channel.send(view=view, allowed_mentions=discord.AllowedMentions(users=[]))
         
-        await Database.set(message.author.id, {'week': user['week'] + 1, 'every': user['every'] + 1, 'links': json.dumps(json.loads(user['links']) + [global_url])}, 'partners_stats')
+        await self.bot.database.set(message.author.id, {'week': user['week'] + 1, 'every': user['every'] + 1, 'links': json.dumps(json.loads(user['links']) + [global_url])}, 'partners_stats')
 
 # Команды
 
-    @group.command(name='статистика', description='Статистика PR-менеджеров.')
+    @group.command(name='stats', description='Статистика PR-менеджеров.')
+    @ManagerPermission.isPartner()
     async def stats(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
+        try:
+            await interaction.response.defer(ephemeral=True)
 
-        if self.PARTNER_ROLE not in interaction.user.roles:
-            await interaction.followup.send('Вы не PR-менеджер!')
-            return
+            users = await self.bot.database.fetchall('SELECT id, week, every FROM partners_stats')
+            cont = ui.Container(accent_color=0xe6acfa)
 
-        users = await Database.fetchall('SELECT id, week, every FROM partners_stats')
-        cont = ui.Container(accent_color=0xe6acfa)
+            cont.add_item(ui.TextDisplay('## Статистика PR-менеджеров'))
+            cont.add_item(ui.TextDisplay('-# Пользователь - за неделю - за всё время'))
+        
+            for user in users:
+                cont.add_item(ui.TextDisplay(f'<@{user['id']}> - {user['week']} - {user['every']}'))
+        
+            cont.add_item(ui.Separator())
+        
+            cont.add_item(ui.TextDisplay(f'-# Обновлено в <t:{int(datetime.now().timestamp())}:f>'))
+        
+            view = ui.LayoutView()
+            view.add_item(cont)
+        
+            await interaction.followup.send(view=view, allowed_mentions=discord.AllowedMentions(users=[]))
+        except Exception as e:
+            await interaction.followup.send(str(e))
 
-        cont.add_item(ui.TextDisplay('## Статистика персонала'))
-        cont.add_item(ui.TextDisplay('-# Пользователь - за неделю - за всё время'))
-    
-        for user in users:
-            cont.add_item(ui.TextDisplay(f'<@{user['id']}> - {user['week']} - {user['every']}'))
-    
-        cont.add_item(ui.Separator())
-    
-        cont.add_item(ui.TextDisplay(f'-# Обновлено в <t:{int(datetime.now().timestamp())}:f>'))
-    
-        view = ui.LayoutView()
-        view.add_item(cont)
-    
-        await interaction.followup.send(view=view, allowed_mentions=discord.AllowedMentions(users=[]))
-
-    @group.command(name='магазин', description='Магазин PR-менеджеров.')
+    @group.command(name='magazine', description='Магазин PR-менеджеров.')
+    @ManagerPermission.isPartner()
     async def magazine(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-
-        if self.PARTNER_ROLE not in interaction.user.roles:
-            await interaction.followup.send('Вы не PR-менеджер!')
-            return
-
+        
         view = PRMagazine_View()
         await view.create_view(interaction)
 
         await interaction.followup.send(view=view)
 
-    @group.command(name='выдать', description='Выдать PR-менеджера.')
+    @group.command(name='add', description='Выдать PR-менеджера.')
     @app_commands.describe(member='Пользователь')
-    async def add_manager(self, interaction: discord.Interaction, member: discord.Member):
+    @ManagerPermission.isOwnerApp()
+    async def add_role(self, interaction: discord.Interaction, member: discord.Member):
         await interaction.response.defer(ephemeral=True)
 
-        if self.PARTNER_ROLE in member.roles:
-            await interaction.followup.send(f'У пользователя {member.mention} уже есть роль PR-менеджера.', allowed_mentions=discord.AllowedMentions(users=[]))
+        role = self.bot.guilds[0].get_role(self.PARTNER_ROLE)
+
+        if role in member.roles:
+            await interaction.followup.send(f'У пользователя {member.mention} уже есть роль PR-менеджера.')
             return
 
-        await member.add_roles(self.PARTNER_ROLE)
-        await Database.add(member.id, {}, 'partners_stats')
+        await member.add_roles(role)
+        await self.bot.database.add(member.id, {}, 'partners_stats')
 
-        await interaction.followup.send(f'{member.mention} добавлен в PR-менеджеры.', allowed_mentions=discord.AllowedMentions(users=[]))
+        await interaction.followup.send(f'{member.mention} добавлен в PR-менеджеры.')
 
-    @group.command(name='убрать', description='Убрать PR-менеджера.')
+    @group.command(name='remove', description='Снять PR-менеджера.')
     @app_commands.describe(member='Пользователь')
-    async def delete_manager(self, interaction: discord.Interaction, member: discord.Member):
+    @ManagerPermission.isOwnerApp()
+    async def remove_role(self, interaction: discord.Interaction, member: discord.Member):
         await interaction.response.defer(ephemeral=True)
 
-        if self.PARTNER_ROLE not in member.roles:
-            await interaction.followup.send(f'У пользователя {member.mention} нет роли PR-менеджера.', allowed_mentions=discord.AllowedMentions(users=[]))
+        role = self.bot.guilds[0].get_role(self.PARTNER_ROLE)
+
+        if role not in member.roles:
+            await interaction.followup.send(f'У пользователя {member.mention} нет роли PR-менеджера.')
             return
 
-        await member.remove_roles(self.PARTNER_ROLE)
-        await Database.delete(member.id, 'partners_stats')
+        await member.remove_roles(role)
+        await self.bot.database.delete(member.id, 'partners_stats')
 
-        await interaction.followup.send(f'{member.mention} удалён из PR-менеджеров.', allowed_mentions=discord.AllowedMentions(users=[]))
-    
-    @group.command(name='reset', description='test reset')
-    async def test_reset(self, interaction: discord.Interaction):
-        await interaction.response.defer(ephemeral=True)
-        try:
-            from .reset import reset
-            await reset(self.bot, self.PARTNERS_CHANNEL_BOT_ID)
-        except Exception as e:
-            await interaction.followup.send(str(e))
+        await interaction.followup.send(f'{member.mention} удалён из PR-менеджеров.')

@@ -18,14 +18,14 @@ class InputManager:
     async def read(self, file: str):
         try:
             if not os.path.exists(file):
-                os.mkfile(file, 0o666)
+                os.mkfifo(file, 0o666)
 
             while Event().running:
                 data = (await asyncio.to_thread(self._readline, file)).split()
                 info = await self.command_dispatcher.execute(data)
         except OSError as e:
             self.logger.error("failed to read file: file was remove")
-            Event().running = False
+            Event().running = False 
         
         os.unlink(file)
 

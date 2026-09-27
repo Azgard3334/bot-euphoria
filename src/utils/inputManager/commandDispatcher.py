@@ -30,4 +30,9 @@ class CommandDispatcher:
     async def execute(self, command):
         if (command[0] not in self.commands):
             self.logger.error(f'{command} is not exist')
-        return await self.commands[command[0]].execute(command)
+        print(command)
+        try:
+            return await self.commands[command[0]].execute(command[1:])
+            print(command)
+        except Exception as e:
+            logger.exception(f'{e}')

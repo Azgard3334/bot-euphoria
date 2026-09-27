@@ -3,11 +3,10 @@ import json
 import discord
 from discord import ui
 from datetime import datetime, timedelta
-from utils.database import Database
-from utils.scheduler import scheduler
+from config import config
 
-async def reset(bot, channel_id):
-    users = await Database.fetchall('SELECT * FROM partners_stats')
+async def reset(bot):
+    users = await bot.database.fetchall('SELECT * FROM partners_stats')
 
     start_week = (datetime.now() - timedelta(days=7)).replace(hour=0, minute=0, second=0, microsecond=0)
     end_week = start_week + timedelta(days=6)
@@ -36,7 +35,7 @@ async def reset(bot, channel_id):
     view = ui.LayoutView()
     view.add_item(cont)
 
-    await Database.execute('UPDATE partners_stats SET week = 0, links = "[]"')
+    await bot.database.execute('UPDATE partners_stats SET week = 0, links = "[]"')
 
-    channel = await bot.fetch_channel(channel_id)
+    channel = await bot.fetch_channel(config['channels']['partners_bot_channel_id'])
     await channel.send(view=view, allowed_mentions=discord.AllowedMentions(users=[]))
