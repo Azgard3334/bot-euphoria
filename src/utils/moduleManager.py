@@ -1,43 +1,43 @@
 from discord.ext import commands
-from utils.loggerManager import LoggerManager
-
 
 class ModuleManager:
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.logger = LoggerManager().get_logger('bot')
 
-    async def _manage(self, action, name: str, success_message: str):
-        result = False
+    async def _manage(self, action, name: str, success_message: str, error_message: str):
+        result = success_message
         try:
-            print(name)
             await action(name)
-            self.logger.success(success_message)
-        except Exception as e: #commands.ExtensionError
-            self.logger.error(f'failed to control module {name}:\n{e}')
-            result = True
+            self.bot.logger.success(f'ModuleManager: {succes_message}')
+        except commands.ExtensionError as e:
+            self.bot.logger.exception(f'ModuleManager: {error_message}')
+            result = e
         return result
 
     async def load(self, name: str):
         return await self._manage(
                 self.bot.load_extension,
                 name,
-                f'{name} is loaded'
+                f'{name} is loaded',
+                f'failed to load {name}'
             )
 
     async def unload(self, name: str):
         return await self._manage(
             self.bot.unload_extension,
             name,
-            f'{name} is unloaded'
+            f'{name} is unloaded',
+            f'failed to unload {name}'
         )
 
     async def reload(self, name: str):
         return await self._manage(
             self.bot.reload_extension,
             name,
-            f'{name} is reloaded'
+            f'{name} is reloaded',
+            f'failed to reload {name}'
         )
 
     async def exit(self):
+        self.bot.info('ModuleManager: executing bot shuydown command')
         await self.bot.close()

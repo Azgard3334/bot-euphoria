@@ -6,27 +6,31 @@ from .commandDispatcher import CommandDispatcher
 
 
 class InputManager:
-    def __init__(self, module_manager):
+    def __init__(self, module_manager, init_file):
         self.command_dispatcher = CommandDispatcher(module_manager)
-        self.logger = LoggerManager().get_logger('bot')
+        self.file = init_file
 
-    @staticmethod
-    def _readline(file):
-        with open(file, 'r') as f:
+    def _creat(self):
+        if not os.path.exists(self.file):
+            os.mkfifo(file, 0o666)
+
+    def _read(self):
+        with open(self.file, 'r', encoding='utf-8') as f:
              return f.readline().strip()
 
-    async def read(self, file: str):
-        try:
-            if not os.path.exists(file):
-                os.mkfifo(file, 0o666)
+    def _write(self, message):
+        with open(self.file, 'w', encoding='utf-8') as f:
+            f.write(message)
 
-            while Event().running:
+    async def read(self):
+        self._creat()
+
+        while Event().running:
+            try:
                 data = (await asyncio.to_thread(self._readline, file)).split()
-                info = await self.command_dispatcher.execute(data)
-        except OSError as e:
-            self.logger.error("failed to read file: file was remove")
-            Event().running = False 
-        
+                result = await self.command_dispatcher.execute(data)
+                self._write(result)
+            except OSError as e:
+                self._creat()
+ 
         os.unlink(file)
-
-        return 0

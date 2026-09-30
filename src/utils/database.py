@@ -3,7 +3,6 @@ import asyncio
 import os
 import aiomysql
 from dotenv import load_dotenv
-from utils.loggerManager import LoggerManager
 
 load_dotenv()
 
@@ -22,7 +21,6 @@ class Database:
     @classmethod
     async def get_pool(cls):
         if cls._pool is None:
-            logger = LoggerManager().get_logger('database')
             try:
                 cls._pool = await aiomysql.create_pool(
                     host=_require_env('DB_HOST'),
@@ -39,9 +37,7 @@ class Database:
                     connect_timeout=int(_require_env('DB_CONNECT_TIMEOUT')),
                     echo=_require_env('DB_ECHO').lower() == 'true',
                 )
-                logger.success('Подключение к базе данных установлено')
             except Exception as e:
-                logger.exception(f'Ошибка подключения к базе данных: {e}')
                 raise
         return cls._pool
 
@@ -63,9 +59,7 @@ class Database:
                 cls._pool = None
 
                 await asyncio.sleep(1)
-                logger.info('Соединение с базой данных закрыто')
             except Exception as e:
-                logger.exception(f'Ошибка при закрытии соединения с БД: {e}')
                 cls._pool = None
 
     @classmethod

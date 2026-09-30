@@ -9,30 +9,8 @@ class CommandDispatcher:
             'unload': UnloadModuleCommand(module_manager),
             'exit': ExitModuleCommand(module_manager),
         }
-        self.logger = LoggerManager().get_logger('bot')
-
-    def register(self, name: str, command: ICommand):
-        result: bool = False
-        if name in self.commands:
-            result = True
-        else:
-            self.commands[name] = command
-        return result
-
-    def remove(self, name: str):
-        result: bool = False
-        try:
-            del self.commands[name]
-        except KeyError:
-            result = True
-        return result
 
     async def execute(self, command):
         if (command[0] not in self.commands):
-            self.logger.error(f'{command} is not exist')
-        print(command)
-        try:
-            return await self.commands[command[0]].execute(command[1:])
-            print(command)
-        except Exception as e:
-            logger.exception(f'{e}')
+            return f'commnad {commnad[0]} isn\'t found'
+        return await self.commands[command[0]].execute(command[1:])

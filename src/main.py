@@ -18,9 +18,9 @@ class Bot(commands.Bot):
 
     async def setup_hook(self):
         await Database.get_pool()
+        self.logger.success('Database connected successfully')
 
     async def on_ready(self):
-        self.logger.success(f'Бот {self.user} готов к работе')
         await self.change_presence(
             activity=discord.Activity(type=discord.ActivityType.playing, name='/help'),
             status=discord.Status.online
@@ -28,27 +28,25 @@ class Bot(commands.Bot):
         if not self._synced:
             await self.tree.sync()
             self._synced = True
+            self.logger.success(f'Bot {self.user} started successfully')
 
     async def close(self):
         await Database.close()
+        self.logger.info('Datebase connection closed')
         await super().close()
+        self.logger.info('Bot stopped with exit code 0')
 
 async def main():
-    logger = LoggerManager().get_logger('bot')
     bot = Bot()
     module_manager = ModuleManager(bot)
-    input_manager = InputManager(module_manager)
-
-    task = asyncio.create_task(input_manager.read('tmp/fifo'))
+    input_manager = InputManager(module_manager, '/tmp/fifo-bot')
 
     try:
         load_dotenv('.env')
+        task = asyncio.create_task(input_manager.read())
         await bot.start(token=os.getenv('TOKEN'))
-        print("bot stoped")
-    except KeyboardInterrupt:
-        logger.warning('Бот остановлен пользователем')
     except Exception as e:
-        logger.exception(f'Произошла ошибка при запуске: {e}')
+       print(e) 
     finally:
         await task
         if not bot.is_closed():
