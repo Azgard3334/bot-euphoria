@@ -34,4 +34,4 @@ class ExitModuleCommand(ICommand):
     async def execute(self, args):
         Event().running = False
         await self.module_manager.exit()
-        return 'bot stopped successfully'
+        return 'Bot stopped successfully'

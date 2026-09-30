@@ -44,7 +44,6 @@ class Database:
     @classmethod
     async def close(cls):
         if cls._pool is not None:
-            logger = LoggerManager().get_logger('database')
             try:
                 if hasattr(cls._pool, '_close_waiter'):
                     cls._pool._close_waiter.cancel()

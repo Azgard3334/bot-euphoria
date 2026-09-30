@@ -9,5 +9,5 @@ class Event:
 
     def __init__(self):
         if not Event._initialized:
-            self.running = True
+            self.running = False
             Event._initialized = True

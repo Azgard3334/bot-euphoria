@@ -9,6 +9,7 @@ from utils.scheduler import scheduler
 from utils.loggerManager import LoggerManager
 from utils.inputManager.inputManager import InputManager
 from utils.moduleManager import ModuleManager
+from utils.inputManager.event import Event
 
 class Bot(commands.Bot):
     def __init__(self):
@@ -28,6 +29,7 @@ class Bot(commands.Bot):
         if not self._synced:
             await self.tree.sync()
             self._synced = True
+            Event().running = True
             self.logger.success(f'Bot {self.user} started successfully')
 
     async def close(self):
@@ -46,7 +48,7 @@ async def main():
         task = asyncio.create_task(input_manager.read())
         await bot.start(token=os.getenv('TOKEN'))
     except Exception as e:
-       print(e) 
+        print(e) 
     finally:
         await task
         if not bot.is_closed():

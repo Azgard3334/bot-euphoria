@@ -1,9 +1,10 @@
 ﻿import os
 import asyncio
+import traceback
+
 from .event import Event
 from utils.loggerManager import LoggerManager
 from .commandDispatcher import CommandDispatcher
-
 
 class InputManager:
     def __init__(self, module_manager, init_file):
@@ -12,7 +13,7 @@ class InputManager:
 
     def _creat(self):
         if not os.path.exists(self.file):
-            os.mkfifo(file, 0o666)
+            os.mkfifo(self.file, 0o666)
 
     def _read(self):
         with open(self.file, 'r', encoding='utf-8') as f:
@@ -20,17 +21,23 @@ class InputManager:
 
     def _write(self, message):
         with open(self.file, 'w', encoding='utf-8') as f:
-            f.write(message)
+            f.write(f'{message}\n')
 
     async def read(self):
         self._creat()
 
+        while not Event().running:
+            await asyncio.sleep(1)
+        await asyncio.to_thread(self._write, 'Bot started successfully')
+
         while Event().running:
             try:
-                data = (await asyncio.to_thread(self._readline, file)).split()
+                data = (await asyncio.to_thread(self._read)).split()
                 result = await self.command_dispatcher.execute(data)
-                self._write(result)
+                await asyncio.to_thread(self._write, result)
             except OSError as e:
                 self._creat()
+            except Exception as e:
+                await asyncio.to_thread(self._write, traceback.format_exc())
  
-        os.unlink(file)
+        os.unlink(self.file)

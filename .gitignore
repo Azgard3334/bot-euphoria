@@ -18,6 +18,7 @@ logs/
 *.log
 
 tmp/
+modules/
 
 .DS_Store
 .AppleDouble

@@ -10,7 +10,7 @@ class ModuleManager:
             await action(name)
             self.bot.logger.success(f'ModuleManager: {succes_message}')
         except commands.ExtensionError as e:
-            self.bot.logger.exception(f'ModuleManager: {error_message}')
+            self.bot.logger.error(f'ModuleManager: {e}')
             result = e
         return result
 
@@ -39,5 +39,5 @@ class ModuleManager:
         )
 
     async def exit(self):
-        self.bot.info('ModuleManager: executing bot shuydown command')
+        self.bot.logger.info('ModuleManager: executing bot shutdown command')
         await self.bot.close()
