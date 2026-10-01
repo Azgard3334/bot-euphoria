@@ -37,6 +37,7 @@ class Bot(commands.Bot):
         self.logger.info('Datebase connection closed')
         await super().close()
         self.logger.info('Bot stopped with exit code 0')
+        Event().running = False
 
 async def main():
     bot = Bot()

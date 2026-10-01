@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from .event import Event
 
 class ICommand(ABC):
     @abstractmethod
@@ -32,6 +31,5 @@ class ExitModuleCommand(ICommand):
         self.module_manager: ModuleManager = module_manager
 
     async def execute(self, args):
-        Event().running = False
         await self.module_manager.exit()
         return 'Bot stopped successfully'
