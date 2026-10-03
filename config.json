@@ -1,0 +1,35 @@
+{
+    "bot": {
+        "TOKEN": "youre token"
+    },
+    "database": {
+        "DB_HOST": "ip datebase",
+        "DB_PORT": "port",
+        "DB_USER": "user",
+        "DB_PASSWORD": "password",
+        "DB_NAME": "test_datebase",
+        "DB_CHARSET": "utf8mb4",
+        "DB_AUTOCOMMIT": "true",
+        "DB_MINSIZE": 1,
+        "DB_MAXSIZE": 10,
+        "DB_POOL_RECYCLE": 3600,
+        "DB_CONNECT_TIMEOUT": 10,
+        "DB_ECHO": "false"
+    },
+    "channels": {
+        "staff_execution_logs": "id",
+        "verification_logs": "id",
+        "chat": "id",
+        "partners": "id",
+        "partners_bot": "id",
+        "week": "id"
+    },
+    "roles": {
+        "no_verification": "id",
+        "verification": "id",
+        "moderator": "id",
+        "support": "id",
+        "partner": "id",
+        "she": "id"
+    }
+}
